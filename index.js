@@ -37,17 +37,11 @@ function verifyJWT(req, res, next) {
 
 async function run() {
   try {
-    const appointmentOptionCollection = client
-      .db("DoctorsPortal")
-      .collection("appointmentOptions");
-    const bookingsCollection = client
-      .db("DoctorsPortal")
-      .collection("bookings");
+    const appointmentOptionCollection = client.db("DoctorsPortal").collection("appointmentOptions");
+    const bookingsCollection = client.db("DoctorsPortal").collection("bookings");
     const usersCollection = client.db("DoctorsPortal").collection("users");
     const doctorsCollection = client.db("DoctorsPortal").collection("doctors");
-    const paymentsCollection = client
-      .db("DoctorsPortal")
-      .collection("payments");
+    const paymentsCollection = client.db("DoctorsPortal").collection("payments");
 
     // NOTE: make sure you use verifyAdmin after verifyJWT
     const verifyAdmin = async (req, res, next) => {
@@ -69,19 +63,13 @@ async function run() {
 
       // get the bookings of the provided date
       const bookingQuery = { appointmentDate: date };
-      const alreadyBooked = await bookingsCollection
-        .find(bookingQuery)
-        .toArray();
+      const alreadyBooked = await bookingsCollection.find(bookingQuery).toArray();
 
       // code carefully :D
       options.forEach((option) => {
-        const optionBooked = alreadyBooked.filter(
-          (book) => book.treatment === option.name
-        );
+        const optionBooked = alreadyBooked.filter((book) => book.treatment === option.name);
         const bookedSlots = optionBooked.map((book) => book.slot);
-        const remainingSlots = option.slots.filter(
-          (slot) => !bookedSlots.includes(slot)
-        );
+        const remainingSlots = option.slots.filter((slot) => !bookedSlots.includes(slot));
         option.slots = remainingSlots;
       });
       res.send(options);
@@ -138,10 +126,7 @@ async function run() {
 
     app.get("/appointmentspeciality", async (req, res) => {
       const query = {};
-      const result = await appointmentOptionCollection
-        .find(query)
-        .project({ name: 1 })
-        .toArray();
+      const result = await appointmentOptionCollection.find(query).project({ name: 1 }).toArray();
       res.send(result);
     });
 
@@ -211,10 +196,7 @@ async function run() {
           transactionId: payment.transactionId,
         },
       };
-      const updatedResult = await bookingsCollection.updateOne(
-        filter,
-        updatedDoc
-      );
+      const updatedResult = await bookingsCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
 
@@ -231,6 +213,12 @@ async function run() {
       res.status(403).send({ accessToken: "" });
     });
 
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
     app.get("/users", async (req, res) => {
       const query = {};
       const users = await usersCollection.find(query).toArray();
@@ -241,16 +229,7 @@ async function run() {
       const email = req.params.email;
       const query = { email };
       const user = await usersCollection.findOne(query);
-      res.send({ isAdmin: user?.role === "admin" });
-    });
-
-    app.post("/users", async (req, res) => {
-      const user = req.body;
-      console.log(user);
-      // TODO: make sure you do not enter duplicate user email
-      // only insert users if the user doesn't exist in the database
-      const result = await usersCollection.insertOne(user);
-      res.send(result);
+      res.send({ isadmin: user?.role === "admin" });
     });
 
     app.put("/users/admin/:id", verifyJWT, verifyAdmin, async (req, res) => {
@@ -262,11 +241,7 @@ async function run() {
           role: "admin",
         },
       };
-      const result = await usersCollection.updateOne(
-        filter,
-        updatedDoc,
-        options
-      );
+      const result = await usersCollection.updateOne(filter, updatedDoc, options);
       res.send(result);
     });
 
